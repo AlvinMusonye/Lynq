@@ -1,46 +1,11 @@
 import React, { useState } from 'react';
 import { Upload, Wand2, CheckCircle, Download, Eye, Zap, Shield, Sparkles, FileText, BarChart3, Menu, X } from 'lucide-react';
 
-export default function LynqLanding() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: 'Lora, serif' }}>
       {/* Navigation */}
-      <header className="container mx-auto px-6 py-6">
-        <nav className="flex justify-between items-center rounded-2xl bg-white/50 backdrop-blur-md border border-white/20 p-4">
-          <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-            Lynq
-          </div>
-          <div className="hidden md:flex gap-8 items-center text-sm">
-            <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors">Features</a>
-            <a href="#how-it-works" className="text-gray-700 hover:text-blue-600 transition-colors">How it works</a>
 
-            <button className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all">
-              Start Cleaning
-            </button>
-          </div>
-          <div className="md:hidden">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-700 p-2">
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </nav>
-        {isMenuOpen && (
-          <div className="md:hidden mt-4">
-            <div className="rounded-2xl bg-white/80 backdrop-blur-md border border-gray-200/50 p-6 space-y-4 shadow-lg">
-              <a href="#features" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 transition-colors">Features</a>
-              <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 transition-colors">How it works</a>
-              <a href="#about" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 transition-colors">About</a>
-              <button className="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-3 rounded-full text-sm font-medium hover:shadow-lg transition-all">
-                Start Cleaning
-              </button>
-            </div>
-          </div>
-        )}
-      </header>
-
-    
 
       {/* Hero Section with iPhone Mockup */}
       <section className="container mx-auto px-6 py-16">
@@ -59,11 +24,10 @@ export default function LynqLanding() {
               and export — all in one place.
 
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mb-12 justify-center lg:justify-start">
-              <button className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-8 py-4 rounded-full text-base font-medium hover:shadow-xl transition-all">
+
                 Start Cleaning
               </button>
-              <button className="bg-white text-blue-600 px-8 py-4 rounded-full text-base font-medium border-2 border-blue-200 hover:border-blue-400 transition-all">
+              <button onClick={onStart} className="bg-white text-blue-600 px-8 py-4 rounded-full text-base font-medium border-2 border-blue-200 hover:border-blue-400 transition-all">
                 Try Demo
               </button>
             </div>
@@ -383,7 +347,7 @@ export default function LynqLanding() {
 
                 Clean, transform, and export your data in just a few clicks.
               </p>
-              <button className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold hover:shadow-2xl transition-all">
+              <button onClick={onStart} className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold hover:shadow-2xl transition-all">
                 Start Cleaning →
               </button>
             </div>
