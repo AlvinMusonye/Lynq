@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Wand2, CheckCircle, Download, Eye, Zap, Shield, Sparkles, FileText, BarChart3 } from 'lucide-react';
 
-export default function LynqLanding() {
+export default function LynqLanding({ onStart }) {
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'Lora, serif' }}>
       {/* Navigation */}
@@ -13,7 +13,7 @@ export default function LynqLanding() {
           <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors">Features</a>
           <a href="#how-it-works" className="text-gray-700 hover:text-blue-600 transition-colors">How it works</a>
           <a href="#about" className="text-gray-700 hover:text-blue-600 transition-colors">About</a>
-          <button className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all">
+          <button onClick={onStart} className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all">
             Start Cleaning
           </button>
         </div>
@@ -35,10 +35,10 @@ export default function LynqLanding() {
               and export — all in one place.
             </p>
             <div className="flex gap-4 mb-12">
-              <button className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-8 py-4 rounded-full text-base font-medium hover:shadow-xl transition-all">
+              <button onClick={onStart} className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-8 py-4 rounded-full text-base font-medium hover:shadow-xl transition-all">
                 Start Cleaning
               </button>
-              <button className="bg-white text-blue-600 px-8 py-4 rounded-full text-base font-medium border-2 border-blue-200 hover:border-blue-400 transition-all">
+              <button onClick={onStart} className="bg-white text-blue-600 px-8 py-4 rounded-full text-base font-medium border-2 border-blue-200 hover:border-blue-400 transition-all">
                 Try Demo
               </button>
             </div>
@@ -353,7 +353,7 @@ export default function LynqLanding() {
                 Upload your messy CSV files and let Lynq handle the rest.<br />
                 Clean, transform, and export your data in just a few clicks.
               </p>
-              <button className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold hover:shadow-2xl transition-all">
+              <button onClick={onStart} className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold hover:shadow-2xl transition-all">
                 Start Cleaning →
               </button>
             </div>
