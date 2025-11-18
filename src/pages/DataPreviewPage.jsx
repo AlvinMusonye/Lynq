@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { FileDown, Send, HelpCircle, CheckCircle2, AlertTriangle, XCircle, Table2, Download, Filter, History, Sparkles, Trash2, Repeat2, Wand2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
+import { FileDown, Send, HelpCircle, CheckCircle2, AlertTriangle, XCircle, Table2, Download, Filter, History, Sparkles, Trash2, Repeat2, Wand2, ShieldCheck, ArrowLeft, Upload } from 'lucide-react';
 
 export default function DataPreviewPage({ fileMeta, onBack }) {
   const [previewRows] = useState(200);
@@ -18,7 +18,8 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
     balanceOk: true,
   });
 
-  const headerCols = useMemo(() => ['firstName', 'lastName', 'mobile', 'email', 'package', 'date'], []);
+  const initialHeaders = useMemo(() => ['firstName', 'lastName', 'mobile', 'email', 'package', 'date'], []);
+  const [headerCols, setHeaderCols] = useState(initialHeaders);
   const sampleRows = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
     id: `row-${i+1}`,
     firstName: `John ${i+1}`,
@@ -34,6 +35,34 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
   const [showDupHighlight, setShowDupHighlight] = useState(false);
   const [removedIds, setRemovedIds] = useState(new Set());
   const [modal, setModal] = useState(null); // {type, payload}
+  const fileInputRef = useRef(null);
+  const [pendingUpload, setPendingUpload] = useState(null); // { headers, rows, meta }
+  const [dragActive, setDragActive] = useState(false);
+
+  const onDropFiles = useCallback((e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result);
+      const parsed = parseCsvBasic(text);
+      if (!parsed || !parsed.headers.length) { notify('Could not parse CSV'); return; }
+      const newRows = parsed.rows.map((r, i) => ({ id: `row-${i+1}`, ...r, status: 'valid' }));
+      setPendingUpload({ headers: parsed.headers, rows: newRows, meta: { name: file.name, size: `${Math.round(file.size/1024)}KB`, uploadedAt: 'just now' } });
+      setModal({ type: 'uploadPreview' });
+    };
+    reader.readAsText(file);
+  }, [notify]);
+
+function trimWhitespaceRow(row) {
+  const r = { ...row };
+  Object.keys(r).forEach(k => {
+    if (typeof r[k] === 'string') r[k] = r[k].trim();
+  });
+  return r;
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-gray-900">
@@ -52,6 +81,10 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => fileInputRef.current?.click()} className="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+              <Upload className="w-4 h-4" /> Upload CSV
+            </button>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onFilePick} />
             <button onClick={() => setModal({ type: 'download' })} className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2">
               <FileDown className="w-4 h-4" /> Download raw
             </button>
@@ -69,6 +102,30 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
         </div>
       </header>
 
+      {/* Prominent Upload Banner */}
+      <section className="container mx-auto px-6 pt-4">
+        <div
+          onDragOver={(e)=>{e.preventDefault(); setDragActive(true);}}
+          onDragLeave={()=>setDragActive(false)}
+          onDrop={onDropFiles}
+          className={`rounded-2xl border-2 ${dragActive ? 'border-blue-400 bg-blue-50/60' : 'border-dashed border-gray-300 bg-white'} p-6 flex items-center justify-between`}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+              <Upload className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-semibold">Upload your CSV to start cleaning</div>
+              <div className="text-sm text-gray-600">Drag & drop a file here, or use the Upload CSV button. Client-side only.</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={()=>fileInputRef.current?.click()} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Choose File</button>
+            <div className="text-xs text-gray-500">Supported: .csv</div>
+          </div>
+        </div>
+      </section>
+
       {/* Top Stats */}
       <section className="container mx-auto px-6 pt-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -82,10 +139,10 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
       </section>
 
       {/* Main */}
-      <main className="container mx-auto px-6 py-4 grid grid-cols-12 gap-4">
+      <main className="container mx-auto px-6 py-4 grid grid-cols-12 gap-4 min-h-[calc(100vh-220px)] items-stretch">
         {/* Left - Table */}
-        <section className="col-span-12 lg:col-span-8 xl:col-span-9">
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <section className="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col flex-1">
             <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
               <div className="font-semibold">Table Preview</div>
               <div className="flex items-center gap-2">
@@ -94,7 +151,7 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
                 <button onClick={()=>notify('Open History log (placeholder)')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-gray-100 flex items-center gap-1"><History className="w-3.5 h-3.5"/> History</button>
               </div>
             </div>
-            <div className="overflow-auto max-h-[62vh]">
+            <div className="overflow-auto flex-1">
               <table className="min-w-full text-sm">
                 <thead className="sticky top-0 bg-white z-10 shadow-sm">
                   <tr>
@@ -154,9 +211,24 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
             </div>
           </SidebarSection>
           <SidebarSection title="Rules / Presets">
-            <RuleToggle onToggle={(on)=>notify(`Rule: Trim Whitespaces ${on ? 'enabled' : 'disabled'} (placeholder)`)} label="Trim Whitespaces" />
-            <RuleToggle onToggle={(on)=>notify(`Rule: Normalize phone to +254 ${on ? 'enabled' : 'disabled'} (placeholder)`)} label="Normalize phone to +254" />
-            <RuleToggle onToggle={(on)=>notify(`Rule: Remove duplicates ${on ? 'enabled' : 'disabled'} (placeholder)`)} label="Remove duplicates" />
+            <RuleItem
+              label="Trim Whitespaces"
+              onToggle={(on)=>notify(`Rule: Trim Whitespaces ${on ? 'enabled' : 'disabled'}`)}
+              onPreview={()=>handleRulePreview('trimWhitespace')}
+              onApply={()=>handleRuleApply('trimWhitespace')}
+            />
+            <RuleItem
+              label="Normalize phone to +254"
+              onToggle={(on)=>notify(`Rule: Normalize phone to +254 ${on ? 'enabled' : 'disabled'}`)}
+              onPreview={()=>handleRulePreview('normalizePhone')}
+              onApply={()=>handleRuleApply('normalizePhone')}
+            />
+            <RuleItem
+              label="Remove duplicates"
+              onToggle={(on)=>notify(`Rule: Remove duplicates ${on ? 'enabled' : 'disabled'}`)}
+              onPreview={()=>handleRulePreview('removeDuplicates')}
+              onApply={()=>handleRuleApply('removeDuplicates')}
+            />
           </SidebarSection>
           <SidebarSection title="Audit & History">
             <div className="text-xs text-gray-600">Auto-Clean applied • 147 rows changed</div>
@@ -167,7 +239,7 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
       {/* Bottom Action Bar */}
       <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white/80 backdrop-blur">
         <div className="container mx-auto px-6 py-3 flex flex-wrap gap-2 items-center">
-          <button onClick={()=>openAutoCleanPreview()} className="px-3 py-2 rounded-lg bg-blue-600 text-white flex items-center gap-2"><Sparkles className="w-4 h-4"/> Auto-Clean</button>
+          <button onClick={()=>setModal({ type: 'autoCleanSettings' })} className="px-3 py-2 rounded-lg bg-blue-600 text-white flex items-center gap-2"><Sparkles className="w-4 h-4"/> Auto-Clean</button>
           <button onClick={()=>openRemoveDuplicates()} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Trash2 className="w-4 h-4"/> Remove Duplicates</button>
           <button onClick={()=>notify('Apply Rules (placeholder)')} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Wand2 className="w-4 h-4"/> Apply Rules</button>
           <button onClick={()=>notify('Revalidate (placeholder)')} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Repeat2 className="w-4 h-4"/> Revalidate</button>
@@ -189,6 +261,46 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
       {/* Modals */}
       {modal && (
         <Modal onClose={()=>setModal(null)}>
+          {modal.type === 'autoCleanSettings' && (
+            <AutoCleanSettingsModal
+              onCancel={()=>setModal(null)}
+              onPreview={(settings)=>{
+                setModal({ type: 'changePreview', payload: { title: 'Auto-Clean Preview', transform: buildTransformFromSettings(settings) } });
+              }}
+              onApply={(settings)=>{
+                const tf = buildTransformFromSettings(settings);
+                let next = rows.map(r => tf(r));
+                if (settings.removeEmptyRows) {
+                  next = next.filter(r => !isRowEmpty(r));
+                }
+                if (settings.dedupe && settings.dedupe !== 'none') {
+                  next = dedupeRows(next, settings.dedupe, settings.dedupeKeep || 'first');
+                }
+                setRows(next);
+                setModal(null);
+                notify('Auto-Clean applied (simulated)');
+              }}
+            />
+          )}
+          {modal.type === 'uploadPreview' && (
+            <ExportDownloadModal
+              title={`Preview Upload: ${pendingUpload?.meta?.name ?? ''}`}
+              rows={pendingUpload?.rows ?? []}
+              headerCols={pendingUpload?.headers ?? []}
+              onCancel={()=>{ setPendingUpload(null); setModal(null); }}
+              onConfirm={()=>{
+                setHeaderCols(pendingUpload.headers);
+                setRows(pendingUpload.rows);
+                if (pendingUpload.meta) {
+                  (fileMeta && typeof fileMeta === 'object')
+                    ? Object.assign(fileMeta, pendingUpload.meta)
+                    : null;
+                }
+                setModal(null);
+                notify('CSV uploaded (simulated)');
+              }}
+            />
+          )}
           {modal.type === 'export' && (
             <ExportDownloadModal
               title="Export Cleaned CSV"
@@ -256,6 +368,25 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
               onApply={()=>{ if (modal.payload.rule === 'Normalize phone to +254') setRows(rows.map(r => normalizePhone(r))); setModal(null); notify('Suggestion applied (simulated)'); }}
             />
           )}
+          {modal.type === 'changePreview' && (
+            <ChangePreviewModal
+              title={modal.payload.title}
+              headerCols={headerCols}
+              rows={rows}
+              transform={modal.payload.transform}
+              onCancel={()=>setModal(null)}
+              onApply={()=>{ setRows(rows.map(r => modal.payload.transform(r))); setModal(null); notify('Rule applied (simulated)'); }}
+            />
+          )}
+          {modal.type === 'dupPreview' && (
+            <ConfirmModal
+              title="Preview: Duplicate Highlight"
+              description={`Potential duplicates are highlighted in yellow. Use 'Remove Duplicates' to proceed.`}
+              confirmLabel="Close"
+              onCancel={()=>{ setShowDupHighlight(false); setModal(null); }}
+              onConfirm={()=>{ setModal(null); }}
+            />
+          )}
           {modal.type === 'sendApi' && (
             <ConfirmModal
               title="Send to API"
@@ -284,150 +415,180 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
       setModal({ type: 'suggestionPreview', payload: { rule: 'Normalize phone to +254' } });
     }
   }
-}
 
-function StatCard({ label, value, color, onClick, icon }) {
-  return (
-    <button onClick={onClick} className="text-left group bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
-      <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">{icon}{label}</div>
-      <div className={`text-xl font-bold ${color}`}>{value}</div>
-      <div className="mt-2 h-1.5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full group-hover:from-blue-100 group-hover:to-blue-200" />
-    </button>
-  );
-}
+  function handleRulePreview(kind) {
+    if (kind === 'normalizePhone') {
+      setModal({ type: 'suggestionPreview', payload: { rule: 'Normalize phone to +254' } });
+    } else if (kind === 'trimWhitespace') {
+      setModal({ type: 'changePreview', payload: { title: 'Preview: Trim Whitespaces', transform: trimWhitespaceRow } });
+    } else if (kind === 'removeDuplicates') {
+      setShowDupHighlight(true);
+      setModal({ type: 'dupPreview' });
+    }
+  }
 
-function SidebarSection({ title, children }) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200">
-      <div className="px-4 py-2.5 border-b font-semibold text-sm bg-gray-50">{title}</div>
-      <div className="p-3 space-y-2">{children}</div>
-    </div>
-  );
-}
+  function handleRuleApply(kind) {
+    if (kind === 'normalizePhone') {
+      setRows(rows.map(r => normalizePhone(r)));
+      notify('Applied: Normalize phone (simulated)');
+    } else if (kind === 'trimWhitespace') {
+      setRows(rows.map(r => trimWhitespaceRow(r)));
+      notify('Applied: Trim whitespaces (simulated)');
+    } else if (kind === 'removeDuplicates') {
+      openRemoveDuplicates();
+    }
+  }
 
-function IssueRow({ label, count, onClick }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="text-gray-700">{label}</div>
-      <button onClick={onClick} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">{count}</button>
-    </div>
-  );
-}
+  async function onFilePick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const parsed = parseCsvBasic(text);
+    if (!parsed || !parsed.headers.length) {
+      notify('Could not parse CSV');
+      return;
+    }
+    const newRows = parsed.rows.map((r, i) => ({ id: `row-${i+1}`, ...r, status: 'valid' }));
+    setPendingUpload({ headers: parsed.headers, rows: newRows, meta: { name: file.name, size: `${Math.round(file.size/1024)}KB`, uploadedAt: 'just now' } });
+    setModal({ type: 'uploadPreview' });
+    // reset input so same file can be reselected
+    e.target.value = '';
+  }
 
-function Suggestion({ label, confidence, onPreview, onApply }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="text-gray-700">{label}</div>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{confidence}</span>
-        <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">Preview</button>
-        <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-blue-600 text-white">Apply</button>
+
+  function buildTransformFromSettings(settings) {
+    return function tf(row) {
+      let r = { ...row };
+      // Text
+      if (settings.trimWhitespace) r = trimWhitespaceRow(r);
+      if (settings.collapseInternalWhitespace) r = collapseInternalWhitespaceRow(r);
+      if (settings.removeSpecialChars) r = removeSpecialCharsRow(r);
+      if (settings.caseTransform && settings.caseTransform !== 'none') r = caseTransformRow(r, settings.caseTransform);
+      // Email
+      if (settings.lowercaseEmails) r = lowercaseEmail(r);
+      if (settings.validateEmail) r = validateEmailRow(r);
+      // Phone
+      if (settings.stripNonNumericPhone) r = stripNonNumericPhone(r);
+      if (settings.normalizePhone) r = normalizePhone(r);
+      if (settings.enforceKenyaPrefix && typeof r.mobile === 'string' && !r.mobile.startsWith('+254')) {
+        r.status = 'invalid';
+      }
+      // Dates
+      if (settings.standardizeDate) r = standardizeDateRow(r);
+      // Numeric
+      if (settings.sanitizeNumeric) r = sanitizeNumericRow(r);
+      if (settings.convertScientific) r = convertScientificRow(r);
+      // Required columns -> mark invalid if missing
+      if (settings.requiredColumns) {
+        const req = settings.requiredColumns.split(',').map(s=>s.trim()).filter(Boolean);
+        if (req.some(k => (r[k] ?? '') === '')) r.status = 'invalid';
+      }
+      return r;
+    }
+  }
+
+  // UI helper components (hoisted in function scope)
+  function StatCard({ label, value, color, onClick, icon }) {
+    return (
+      <button onClick={onClick} className="text-left group bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
+        <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">{icon}{label}</div>
+        <div className={`text-xl font-bold ${color}`}>{value}</div>
+        <div className="mt-2 h-1.5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full group-hover:from-blue-100 group-hover:to-blue-200" />
+      </button>
+    );
+  }
+
+  function SidebarSection({ title, children }) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200">
+        <div className="px-4 py-2.5 border-b font-semibold text-sm bg-gray-50">{title}</div>
+        <div className="p-3 space-y-2">{children}</div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function RuleToggle({ label, onToggle }) {
-  const [on, setOn] = useState(true);
-  return (
-    <button onClick={() => { const next = !on; setOn(next); onToggle && onToggle(next); }} className={`w-full text-left text-sm px-3 py-2 rounded-lg border ${on ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}`}>
-      {label}
-    </button>
-  );
-}
-
-function Modal({ children, onClose }) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/10" onClick={onClose} />
-      <div className="relative w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
-        {children}
+  function IssueRow({ label, count, onClick }) {
+    return (
+      <div className="flex items-center justify-between text-sm">
+        <div className="text-gray-700">{label}</div>
+        <button onClick={onClick} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">{count}</button>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function ExportDownloadModal({ title, rows, headerCols, onCancel, onConfirm }) {
-  return (
-    <div>
-      <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
-      <div className="p-5 space-y-4">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Delimiter</label>
-            <select className="w-full border rounded-lg px-3 py-2">
-              <option value=",">Comma (,)</option>
-              <option value=";">Semicolon (;)</option>
-              <option value="\t">Tab</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Encoding</label>
-            <select className="w-full border rounded-lg px-3 py-2">
-              <option>UTF-8</option>
-              <option>ISO-8859-1</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Include header</label>
-            <input type="checkbox" defaultChecked className="align-middle" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Print layout</label>
-            <select className="w-full border rounded-lg px-3 py-2">
-              <option>Compact</option>
-              <option>Full width</option>
-            </select>
-          </div>
-        </div>
-        <div className="text-xs text-gray-500">Preview (first 5 rows)</div>
-        <div className="overflow-auto border rounded-lg">
-          <table className="min-w-full text-xs">
-            <thead className="bg-gray-50">
-              <tr>
-                {headerCols.map(h => <th key={h} className="px-2 py-1 text-left text-gray-600">{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.slice(0,5).map(r => (
-                <tr key={r.id} className="border-t">
-                  {headerCols.map(h => <td key={h} className="px-2 py-1">{r[h]}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+  function Suggestion({ label, confidence, onPreview, onApply }) {
+    return (
+      <div className="flex items-center justify-between text-sm">
+        <div className="text-gray-700">{label}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{confidence}</span>
+          <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">Preview</button>
+          <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-blue-600 text-white">Apply</button>
         </div>
       </div>
-      <div className="px-5 py-3 border-t flex justify-end gap-2">
-        <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
-        <button onClick={() => { onConfirm(); }} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Proceed</button>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
-function ConfirmModal({ title, description, confirmLabel = 'Confirm', tone = 'primary', onCancel, onConfirm }) {
-  return (
-    <div>
-      <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
-      <div className="p-5 text-sm text-gray-700">{description}</div>
-      <div className="px-5 py-3 border-t flex justify-end gap-2">
-        <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
-        <button onClick={onConfirm} className={`px-3 py-2 rounded-lg ${tone === 'danger' ? 'bg-red-600' : tone === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'} text-white`}>{confirmLabel}</button>
+  function RuleItem({ label, onToggle, onPreview, onApply }) {
+    const [on, setOn] = useState(true);
+    return (
+      <div className="p-2 border border-gray-200 rounded-xl flex items-center justify-between gap-2">
+        <button onClick={() => { const next = !on; setOn(next); onToggle && onToggle(next); }} className={`flex-1 text-left text-sm px-3 py-2 rounded-lg border ${on ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}`}>
+          {label}
+        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">Preview</button>
+          <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-blue-600 text-white">Apply</button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function ChangePreviewModal({ title, headerCols, rows, transform, onCancel, onApply }) {
-  const before = rows.slice(0,5);
-  const after = before.map(r => transform(r));
-  return (
-    <div>
-      <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
-      <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div className="text-xs text-gray-500 mb-1">Before</div>
+  function Modal({ children, onClose }) {
+    return (
+      <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center">
+        <div className="absolute inset-0 bg-black/10" onClick={onClose} />
+        <div className="relative w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  function ExportDownloadModal({ title, rows, headerCols, onCancel, onConfirm }) {
+    return (
+      <div>
+        <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Delimiter</label>
+              <select className="w-full border rounded-lg px-3 py-2">
+                <option value=",">Comma (,)</option>
+                <option value=";">Semicolon (;)</option>
+                <option value="\t">Tab</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Encoding</label>
+              <select className="w-full border rounded-lg px-3 py-2">
+                <option>UTF-8</option>
+                <option>ISO-8859-1</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Include header</label>
+              <input type="checkbox" defaultChecked className="align-middle" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Print layout</label>
+              <select className="w-full border rounded-lg px-3 py-2">
+                <option>Compact</option>
+                <option>Full width</option>
+              </select>
+            </div>
+          </div>
+          <div className="text-xs text-gray-500">Preview (first 5 rows)</div>
           <div className="overflow-auto border rounded-lg">
             <table className="min-w-full text-xs">
               <thead className="bg-gray-50">
@@ -436,7 +597,7 @@ function ChangePreviewModal({ title, headerCols, rows, transform, onCancel, onAp
                 </tr>
               </thead>
               <tbody>
-                {before.map(r => (
+                {rows.slice(0,5).map(r => (
                   <tr key={r.id} className="border-t">
                     {headerCols.map(h => <td key={h} className="px-2 py-1">{r[h]}</td>)}
                   </tr>
@@ -445,38 +606,93 @@ function ChangePreviewModal({ title, headerCols, rows, transform, onCancel, onAp
             </table>
           </div>
         </div>
-        <div>
-          <div className="text-xs text-gray-500 mb-1">After</div>
-          <div className="overflow-auto border rounded-lg">
-            <table className="min-w-full text-xs">
-              <thead className="bg-gray-50">
-                <tr>
-                  {headerCols.map(h => <th key={h} className="px-2 py-1 text-left text-gray-600">{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {after.map(r => (
-                  <tr key={r.id} className="border-t">
-                    {headerCols.map(h => <td key={h} className="px-2 py-1">{r[h]}</td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="px-5 py-3 border-t flex justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+          <button onClick={() => { onConfirm(); }} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Proceed</button>
         </div>
       </div>
-      <div className="px-5 py-3 border-t flex justify-end gap-2">
-        <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
-        <button onClick={onApply} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Apply</button>
+    );
+  }
+
+  function ConfirmModal({ title, description, confirmLabel = 'Confirm', tone = 'primary', onCancel, onConfirm }) {
+    return (
+      <div>
+        <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
+        <div className="p-5 text-sm text-gray-700">{description}</div>
+        <div className="px-5 py-3 border-t flex justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+          <button onClick={onConfirm} className={`px-3 py-2 rounded-lg ${tone === 'danger' ? 'bg-red-600' : tone === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'} text-white`}>{confirmLabel}</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  function ChangePreviewModal({ title, headerCols, rows, transform, onCancel, onApply }) {
+    const before = rows.slice(0,5);
+    const after = before.map(r => transform(r));
+    return (
+      <div>
+        <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Before</div>
+            <div className="overflow-auto border rounded-lg">
+              <table className="min-w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {headerCols.map(h => <th key={h} className="px-2 py-1 text-left text-gray-600">{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {before.map(r => (
+                    <tr key={r.id} className="border-t">
+                      {headerCols.map(h => <td key={h} className="px-2 py-1">{r[h]}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500 mb-1">After</div>
+            <div className="overflow-auto border rounded-lg">
+              <table className="min-w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {headerCols.map(h => <th key={h} className="px-2 py-1 text-left text-gray-600">{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {after.map(r => (
+                    <tr key={r.id} className="border-t">
+                      {headerCols.map(h => <td key={h} className="px-2 py-1">{r[h]}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="px-5 py-3 border-t flex justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+          <button onClick={onApply} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Apply</button>
+        </div>
+      </div>
+    );
+  }
+
+// Helpers used by Auto-Clean and Upload parsing
+function isRowEmpty(row) {
+  const vals = Object.values(row ?? {});
+  if (vals.length === 0) return true;
+  return vals.every(v => (typeof v === 'string' ? v.trim() : v) === '' || v == null);
 }
 
 function normalizePhone(row) {
   const r = { ...row };
   if (typeof r.mobile === 'string') {
     let v = r.mobile.trim();
+    // Accept formats: 07XXXXXXXX, 7XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
     if (/^\+?2547\d{8}$/.test(v)) {
       v = v.startsWith('+') ? v : `+${v}`;
     } else if (/^07\d{8}$/.test(v)) {
@@ -487,7 +703,171 @@ function normalizePhone(row) {
       v = `+${v}`;
     }
     r.mobile = v;
-    r.status = 'valid';
   }
   return r;
+}
+
+function stripNonNumericPhone(row) {
+  const r = { ...row };
+  if (typeof r.mobile === 'string') {
+    r.mobile = r.mobile.replace(/\D+/g, '');
+  }
+  return r;
+}
+
+function lowercaseEmail(row) {
+  const r = { ...row };
+  if (typeof r.email === 'string') r.email = r.email.trim().toLowerCase();
+  return r;
+}
+
+function validateEmailRow(row) {
+  const r = { ...row };
+  if (typeof r.email === 'string') {
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email.trim());
+    if (!ok) r.status = 'invalid';
+  }
+  return r;
+}
+
+function standardizeDateRow(row) {
+  const r = { ...row };
+  if (typeof r.date === 'string') {
+    let v = r.date.trim();
+    // Try DD/MM/YYYY or MM/DD/YYYY
+    const m1 = v.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{4})$/);
+    if (m1) {
+      const [_, a, b, y] = m1;
+      const dd = parseInt(a,10), mm = parseInt(b,10);
+      const dayFirst = dd > 12 || (dd <= 12 && mm <= 12 ? dd >= mm : true);
+      const day = dayFirst ? dd : mm;
+      const mon = dayFirst ? mm : dd;
+      v = `${y}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    } else {
+      const m2 = v.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+      if (m2) {
+        const [_, y, m, d] = m2;
+        v = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      }
+    }
+    r.date = v;
+  }
+  return r;
+}
+
+function sanitizeNumericRow(row) {
+  const r = { ...row };
+  Object.keys(r).forEach(k => {
+    const val = r[k];
+    if (typeof val === 'string') {
+      // Remove spaces, currency, and thousands separators
+      if (/[0-9]/.test(val)) {
+        r[k] = val.replace(/[\s,€$]/g, '');
+      }
+    }
+  });
+  return r;
+}
+
+function convertScientificRow(row) {
+  const r = { ...row };
+  Object.keys(r).forEach(k => {
+    const val = r[k];
+    if (typeof val === 'string' && /\d+(?:\.\d+)?e[+\-]?\d+/i.test(val)) {
+      const num = Number(val);
+      if (!Number.isNaN(num)) r[k] = String(Math.trunc(num));
+    }
+  });
+  return r;
+}
+
+function collapseInternalWhitespaceRow(row) {
+  const r = { ...row };
+  Object.keys(r).forEach(k => {
+    if (typeof r[k] === 'string') r[k] = r[k].replace(/\s+/g, ' ');
+  });
+  return r;
+}
+
+function removeSpecialCharsRow(row) {
+  const r = { ...row };
+  Object.keys(r).forEach(k => {
+    if (typeof r[k] === 'string') r[k] = r[k].replace(/[^\w\s@+.-]/g, '');
+  });
+  return r;
+}
+
+function caseTransformRow(row, mode) {
+  const r = { ...row };
+  Object.keys(r).forEach(k => {
+    if (typeof r[k] === 'string') {
+      const s = r[k];
+      if (mode === 'lower') r[k] = s.toLowerCase();
+      else if (mode === 'upper') r[k] = s.toUpperCase();
+      else if (mode === 'title') r[k] = s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
+  });
+  return r;
+}
+
+function dedupeRows(rows, mode, keep) {
+  if (mode === 'none') return rows;
+  const keyFn = (r) => {
+    if (mode === 'exact') return JSON.stringify(r);
+    const digits = (r.mobile ?? '').toString().replace(/\D+/g, '');
+    return digits.startsWith('2547') ? digits : digits.startsWith('7') ? `254${digits}` : digits;
+  };
+  const map = new Map();
+  rows.forEach((r, idx) => {
+    const key = keyFn(r);
+    const entry = map.get(key);
+    if (!entry) {
+      map.set(key, { r, idx });
+    } else {
+      if (keep === 'last') map.set(key, { r, idx });
+      if (keep === 'highestPackage') {
+        const curVal = Number((entry.r.package ?? '0').toString().replace(/[^\d.]/g,'')) || 0;
+        const nextVal = Number((r.package ?? '0').toString().replace(/[^\d.]/g,'')) || 0;
+        if (nextVal > curVal) map.set(key, { r, idx });
+      }
+    }
+  });
+  // keep === 'first' means do nothing
+  return Array.from(map.values()).map(v => v.r);
+}
+
+// Simple CSV parsing for demo
+function parseCsvBasic(text) {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n').filter(l => l.length > 0);
+  if (lines.length === 0) return { headers: [], rows: [] };
+  const headers = splitCsvLine(lines[0]);
+  const rows = lines.slice(1).map(line => {
+    const cells = splitCsvLine(line);
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h] = cells[idx] ?? ''; });
+    return obj;
+  });
+  return { headers, rows };
+}
+
+function splitCsvLine(line) {
+  const out = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
 }
