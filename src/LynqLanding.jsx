@@ -1,41 +1,30 @@
 import React, { useState } from 'react';
-import { Upload, Wand2, CheckCircle, Download, Eye, Zap, Shield, Sparkles, FileText, BarChart3 } from 'lucide-react';
+import { Upload, Wand2, CheckCircle, Download, Eye, Zap, Shield, Sparkles, FileText, BarChart3, Menu, X } from 'lucide-react';
 
-export default function LynqLanding({ onStart }) {
+
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Lora, serif' }}>
+    <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: 'Lora, serif' }}>
       {/* Navigation */}
-      <nav className="container mx-auto px-6 py-6 flex justify-between items-center rounded-2xl bg-white/50 backdrop-blur-md border border-white/20">
-        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-          Lynq
-        </div>
-        <div className="flex gap-8 items-center text-sm">
-          <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors">Features</a>
-          <a href="#how-it-works" className="text-gray-700 hover:text-blue-600 transition-colors">How it works</a>
-          <a href="#about" className="text-gray-700 hover:text-blue-600 transition-colors">About</a>
-          <button onClick={onStart} className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all">
-            Start Cleaning
-          </button>
-        </div>
-      </nav>
+
 
       {/* Hero Section with iPhone Mockup */}
       <section className="container mx-auto px-6 py-16">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Content */}
-          <div>
-            <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Clean Your CSVs<br />
+          <div className="text-center lg:text-left">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+              Clean Your CSVs
+
               <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
                 in Seconds
               </span>
             </h1>
-            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-              Fix messy data instantly. Upload, clean, transform,<br />
+            <p className="text-gray-600 text-lg mb-8 leading-relaxed max-w-md mx-auto lg:mx-0">
+              Fix messy data instantly. Upload, clean, transform,
               and export — all in one place.
+
             </p>
-            <div className="flex gap-4 mb-12">
-              <button onClick={onStart} className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-8 py-4 rounded-full text-base font-medium hover:shadow-xl transition-all">
+
                 Start Cleaning
               </button>
               <button onClick={onStart} className="bg-white text-blue-600 px-8 py-4 rounded-full text-base font-medium border-2 border-blue-200 hover:border-blue-400 transition-all">
@@ -44,7 +33,7 @@ export default function LynqLanding({ onStart }) {
             </div>
 
             {/* Feature Cards Below Button */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="bg-white rounded-3xl p-6 shadow-md border border-blue-100">
                 <div className="bg-blue-50 rounded-2xl w-12 h-12 flex items-center justify-center mb-4 shadow-sm">
                   <Sparkles className="w-6 h-6 text-blue-600" />
@@ -66,22 +55,23 @@ export default function LynqLanding({ onStart }) {
           {/* Right - iPhone Mockup */}
           <div className="relative">
             {/* Main iPhone */}
-            <div className="relative z-10 mx-auto" style={{ width: '280px' }}>
+            <div className="relative z-10 mx-auto w-[280px]">
               {/* iPhone Frame */}
               <div className="bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
                 <div className="bg-white rounded-[2.5rem] overflow-hidden">
                   {/* Status Bar */}
                   <div className="bg-white px-6 py-3 flex justify-between items-center text-xs">
                     <span className="font-semibold">9:41</span>
-                    <div className="flex gap-1 items-center">
-                      <div className="w-4 h-3 border border-gray-400 rounded-sm"></div>
-                      <div className="w-1 h-3 bg-gray-400 rounded-sm"></div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-3 w-4 rounded-sm border border-gray-400"></div>
+                      <div className="h-3 w-1 rounded-sm bg-gray-400"></div>
+
                     </div>
                   </div>
 
                   {/* Screen Content */}
                   <div className="bg-gradient-to-br from-blue-50 to-white px-4 py-4" style={{ height: '520px' }}>
-                    {/* Header */}
+                    {/* Header (Phone screen content) */}
                     <div className="mb-4">
                       <div className="text-[10px] text-gray-500 mb-1">Welcome to</div>
                       <div className="text-lg font-bold mb-3">Lynq CSV Cleaner ✨</div>
@@ -150,9 +140,10 @@ export default function LynqLanding({ onStart }) {
 
                   {/* Bottom Nav */}
                   <div className="bg-white px-6 py-4 flex justify-around border-t">
-                    <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                    <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-                    <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+                  <div className="h-1 w-8 rounded-full bg-blue-600"></div>
+                    <div className="h-1 w-8 rounded-full bg-gray-300"></div>
+                    <div className="h-1 w-8 rounded-full bg-gray-300"></div>
+
                   </div>
                 </div>
               </div>
@@ -161,13 +152,13 @@ export default function LynqLanding({ onStart }) {
             {/* Floating Cards Around iPhone */}
             
 
-            <div className="absolute bottom-32 -left-12 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
+            <div className="hidden lg:block absolute bottom-32 -left-12 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
               <div className="text-2xl font-bold text-blue-600 mb-1">100%</div>
               <div className="text-xs text-gray-600 mb-2">Browser-based</div>
               <div className="text-xs text-gray-500">No install needed</div>
             </div>
 
-            <div className="absolute top-1/2 -right-20 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
+            <div className="hidden lg:block absolute top-1/2 -right-20 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
               <div className="font-semibold text-sm mb-2">Live Preview</div>
               <div className="text-xs text-gray-500 mb-3">See changes before exporting</div>
               <div className="flex gap-1">
@@ -182,8 +173,8 @@ export default function LynqLanding({ onStart }) {
 
       {/* Statistics Section */}
       <section className="container mx-auto px-6 py-16">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="text-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="text-center">
             <div className="text-4xl font-bold text-blue-600 mb-2">Save Hours</div>
             <div className="text-gray-600">of manual cleaning</div>
           </div>
@@ -206,10 +197,10 @@ export default function LynqLanding({ onStart }) {
       <section id="features" className="bg-gradient-to-br from-blue-50 to-white py-20">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
-              Comprehensive <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">Feature Set</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+          Comprehensive <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">Feature Set</span>
             </h2>
-            <p className="text-xl text-gray-600">Everything you need to clean your data</p>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">Everything you need to clean your data</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto items-center">
@@ -300,8 +291,9 @@ export default function LynqLanding({ onStart }) {
       {/* How It Works Section */}
       <section id="how-it-works" className="container mx-auto px-6 py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-bold mb-4">How It Works</h2>
-          <p className="text-xl text-gray-600">Clean data in 3 simple steps</p>
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">How It Works</h2>
+          <p className="text-lg sm:text-xl text-gray-600">Clean data in 3 simple steps</p>
+
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -342,15 +334,17 @@ export default function LynqLanding({ onStart }) {
       {/* Bottom CTA Section with iPhone */}
       <section className="container mx-auto px-6 py-20">
         <div className="bg-gradient-to-br from-blue-600 to-blue-500 rounded-[3rem] overflow-hidden relative">
-          <div className="grid lg:grid-cols-2 gap-12 items-center p-12 lg:p-20">
-            {/* Left Content */}
-            <div className="text-white">
-              <h2 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-                Ready? Let's Start with Lynq<br />
+        <div className="grid lg:grid-cols-2 gap-12 items-center p-8 sm:p-12 lg:p-20">
+        {/* Left Content */}
+        <div className="text-white text-center lg:text-left">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+                Ready? Let's Start with Lynq
+
                 and Get Awesome Experience
               </h2>
-              <p className="text-blue-100 mb-8 text-lg leading-relaxed">
-                Upload your messy CSV files and let Lynq handle the rest.<br />
+              <p className="text-blue-100 mb-8 text-lg leading-relaxed max-w-lg mx-auto lg:mx-0">
+                Upload your messy CSV files and let Lynq handle the rest.
+
                 Clean, transform, and export your data in just a few clicks.
               </p>
               <button onClick={onStart} className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold hover:shadow-2xl transition-all">
@@ -359,7 +353,7 @@ export default function LynqLanding({ onStart }) {
             </div>
 
             {/* Right - iPhone Mockup */}
-            <div className="relative">
+            <div className="relative hidden lg:block">
               <div className="relative z-10" style={{ width: '240px', margin: '0 auto' }}>
                 <div className="bg-gray-900 rounded-[2.5rem] p-2 shadow-2xl">
                   <div className="bg-white rounded-[2rem] overflow-hidden">
@@ -411,32 +405,32 @@ export default function LynqLanding({ onStart }) {
       {/* Footer */}
       <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-12">
         <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-center md:text-left">
+        <div>
               <div className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">
                 Lynq
               </div>
               <p className="text-gray-400 text-sm">Clean CSVs in seconds</p>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Product</h4>
-              <div className="space-y-2 text-gray-400 text-sm">
+            <h4 className="font-bold mb-4 text-white">Product</h4>
+            <div className="space-y-2 text-gray-400 text-sm">
                 <div><a href="#features" className="hover:text-white transition-colors">Features</a></div>
                 <div><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></div>
                 <div><a href="#" className="hover:text-white transition-colors">Docs</a></div>
               </div>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Company</h4>
-              <div className="space-y-2 text-gray-400 text-sm">
+            <h4 className="font-bold mb-4 text-white">Company</h4>
+            <div className="space-y-2 text-gray-400 text-sm">
                 <div><a href="#about" className="hover:text-white transition-colors">About</a></div>
                 <div><a href="#" className="hover:text-white transition-colors">Contact</a></div>
                 <div><a href="#" className="hover:text-white transition-colors">GitHub</a></div>
               </div>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Legal</h4>
-              <div className="space-y-2 text-gray-400 text-sm">
+            <h4 className="font-bold mb-4 text-white">Legal</h4>
+            <div className="space-y-2 text-gray-400 text-sm">
                 <div><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></div>
                 <div><a href="#" className="hover:text-white transition-colors">Terms of Service</a></div>
               </div>
