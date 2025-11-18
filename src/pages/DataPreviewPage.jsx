@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useCallback } from 'react';
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { FileDown, Send, HelpCircle, CheckCircle2, AlertTriangle, XCircle, Table2, Download, Filter, History, Sparkles, Trash2, Repeat2, Wand2, ShieldCheck, ArrowLeft, Upload } from 'lucide-react';
 
 export default function DataPreviewPage({ fileMeta, onBack }) {
@@ -9,14 +9,6 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
     window.clearTimeout(window.__lynq_toast_timer);
     window.__lynq_toast_timer = window.setTimeout(() => setToast(null), 2000);
   };
-  const [stats] = useState({
-    total: 6000,
-    valid: 5700,
-    invalid: 300,
-    duplicates: 42,
-    sum: 123456,
-    balanceOk: true,
-  });
 
   const initialHeaders = useMemo(() => ['firstName', 'lastName', 'mobile', 'email', 'package', 'date'], []);
   const [headerCols, setHeaderCols] = useState(initialHeaders);
@@ -34,10 +26,52 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
   const duplicateIds = useMemo(() => new Set(rows.filter((_, idx) => idx % 4 === 0).map(r => r.id)), [rows]);
   const [showDupHighlight, setShowDupHighlight] = useState(false);
   const [removedIds, setRemovedIds] = useState(new Set());
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const valid = rows.filter(r => r.status === 'valid').length;
+    const invalid = rows.filter(r => r.status === 'invalid').length;
+    const duplicates = duplicateIds.size;
+    const sum = rows.reduce((acc, r) => acc + (Number((r.package ?? '0').toString().replace(/[^\d.]/g,'')) || 0), 0);
+    const balanceOk = true;
+    return { total, valid, invalid, duplicates, sum, balanceOk };
+  }, [rows, duplicateIds]);
+
+  const [pageSize, setPageSize] = useState(50);
+  const [page, setPage] = useState(1);
+  const filteredRows = useMemo(() => rows.filter(r => !removedIds.has(r.id)), [rows, removedIds]);
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filteredRows.slice(pageStart, pageStart + pageSize);
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
   const [modal, setModal] = useState(null); // {type, payload}
   const fileInputRef = useRef(null);
   const [pendingUpload, setPendingUpload] = useState(null); // { headers, rows, meta }
   const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lynq_dataset');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (Array.isArray(data?.headers) && Array.isArray(data?.rows)) {
+          setHeaderCols(data.headers);
+          setRows(data.rows);
+          if (data.meta && fileMeta && typeof fileMeta === 'object') {
+            Object.assign(fileMeta, data.meta);
+          }
+        }
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      const meta = (fileMeta && typeof fileMeta === 'object') ? fileMeta : {};
+      localStorage.setItem('lynq_dataset', JSON.stringify({ headers: headerCols, rows, meta }));
+    } catch {}
+  }, [headerCols, rows]);
 
   const onDropFiles = useCallback((e) => {
     e.preventDefault();
@@ -130,7 +164,7 @@ function trimWhitespaceRow(row) {
       <section className="container mx-auto px-6 pt-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard label="Total rows" value={stats.total} color="text-gray-900" onClick={()=>notify('Filter: All rows (placeholder)')} />
-          <StatCard label={`Preview rows`} value={`${previewRows} / ${stats.total}`} color="text-blue-700" onClick={()=>notify('Show more rows (placeholder)')} />
+          <StatCard label={`Preview rows`} value={`${pageRows.length} / ${stats.total}`} color="text-blue-700" onClick={()=>notify('Show more rows (placeholder)')} />
           <StatCard label="Valid" value={stats.valid} color="text-green-700" onClick={()=>notify('Filter: Valid rows (placeholder)')} icon={<CheckCircle2 className="w-4 h-4"/>} />
           <StatCard label="Invalid" value={stats.invalid} color="text-red-700" onClick={()=>notify('Filter: Invalid rows (placeholder)')} icon={<XCircle className="w-4 h-4"/>} />
           <StatCard label="Duplicates" value={stats.duplicates} color="text-yellow-700" onClick={()=>notify('Filter: Duplicates (placeholder)')} icon={<AlertTriangle className="w-4 h-4"/>} />
@@ -139,43 +173,78 @@ function trimWhitespaceRow(row) {
       </section>
 
       {/* Main */}
-      <main className="container mx-auto px-6 py-4 grid grid-cols-12 gap-4 min-h-[calc(100vh-220px)] items-stretch">
+      <main className="container mx-auto px-6 py-4 grid grid-cols-12 gap-4 items-stretch">
         {/* Left - Table */}
         <section className="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col">
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col flex-1">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col">
             <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
               <div className="font-semibold">Table Preview</div>
               <div className="flex items-center gap-2">
-                <div className="text-xs text-gray-500">Sticky header • Virtualized</div>
+                <div className="text-xs text-gray-500">Sticky header • Scrollable</div>
+                <div className="hidden sm:flex items-center gap-1 text-xs text-gray-600">
+                  <span>Rows:</span>
+                  <select
+                    className="px-2 py-1 border border-gray-200 rounded-md bg-white"
+                    value={pageSize}
+                    onChange={(e)=>{ setPageSize(Number(e.target.value)); setPage(1); }}
+                  >
+                    {[25,50,100,200].map(sz => (
+                      <option key={sz} value={sz}>{sz}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="hidden sm:flex items-center gap-1 text-xs">
+                  <button
+                    className="px-2 py-1 rounded border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                    onClick={()=>setPage(p=>Math.max(1, p-1))}
+                    disabled={page <= 1}
+                  >
+                    Prev
+                  </button>
+                  <div className="px-2 text-gray-600">{page} / {totalPages}</div>
+                  <button
+                    className="px-2 py-1 rounded border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                    onClick={()=>setPage(p=>Math.min(totalPages, p+1))}
+                    disabled={page >= totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
                 <button onClick={()=>notify('Open Filters panel (placeholder)')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-gray-100 flex items-center gap-1"><Filter className="w-3.5 h-3.5"/> Filters</button>
                 <button onClick={()=>notify('Open History log (placeholder)')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-gray-100 flex items-center gap-1"><History className="w-3.5 h-3.5"/> History</button>
               </div>
             </div>
-            <div className="overflow-auto flex-1">
-              <table className="min-w-full text-sm">
+            <div className="overflow-auto">
+              <table className="min-w-max w-full text-sm table-auto">
                 <thead className="sticky top-0 bg-white z-10 shadow-sm">
                   <tr>
                     <th className="px-3 py-2 text-left w-10"><input type="checkbox" /></th>
-                    <th className="px-3 py-2 text-left text-gray-600">#</th>
+                    <th className="px-3 py-2 text-left text-gray-600 whitespace-nowrap">#</th>
                     {headerCols.map(col => (
-                      <th key={col} className="px-3 py-2 text-left text-gray-600">{col}</th>
+                      <th key={col} className="px-3 py-2 text-left text-gray-600 whitespace-nowrap">{col}</th>
                     ))}
-                    <th className="px-3 py-2 text-right text-gray-600">Actions</th>
+                    <th className="px-3 py-2 text-right text-gray-600 whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.filter(r => !removedIds.has(r.id)).slice(0, previewRows).map((row, idx) => (
+                  {pageRows.map((row, idx) => (
                     <tr key={row.id} className="border-t hover:bg-blue-50/40">
                       <td className="px-3 py-2"><input type="checkbox" /></td>
-                      <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
+                      <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{pageStart + idx + 1}</td>
                       {headerCols.map(col => (
-                        <td key={col} className={`px-3 py-2 ${showDupHighlight && duplicateIds.has(row.id) ? 'bg-yellow-50' : ''} ${removedIds.has(row.id) ? 'opacity-50 line-through' : ''}`}>
-                          <span className={row.status === 'invalid' && col === 'mobile' ? 'rounded px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200' : ''}>
+                        <td
+                          key={col}
+                          className={`px-3 py-2 whitespace-nowrap ${showDupHighlight && duplicateIds.has(row.id) ? 'bg-yellow-50' : ''} ${removedIds.has(row.id) ? 'opacity-50 line-through' : ''}`}
+                        >
+                          <span
+                            title={row[col] != null ? String(row[col]) : ''}
+                            className={`${row.status === 'invalid' && col === 'mobile' ? 'rounded px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200' : ''} block max-w-[200px] truncate`}
+                          >
                             {row[col]}
                           </span>
                         </td>
                       ))}
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1">
                           <button onClick={()=>setModal({ type: 'editRow', payload: { row } })} className="px-2 py-1 text-xs rounded border hover:bg-gray-50">Edit</button>
                           <button onClick={()=>setModal({ type: 'deleteRow', payload: { row } })} className="px-2 py-1 text-xs rounded border hover:bg-gray-50">Delete</button>
@@ -296,6 +365,11 @@ function trimWhitespaceRow(row) {
                     ? Object.assign(fileMeta, pendingUpload.meta)
                     : null;
                 }
+                try {
+                  const meta = pendingUpload.meta || {};
+                  localStorage.setItem('lynq_dataset', JSON.stringify({ headers: pendingUpload.headers, rows: pendingUpload.rows, meta }));
+                } catch {}
+                setPage(1);
                 setModal(null);
                 notify('CSV uploaded (simulated)');
               }}
