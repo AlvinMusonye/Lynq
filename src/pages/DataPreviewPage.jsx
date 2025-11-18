@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { FileDown, Send, HelpCircle, CheckCircle2, AlertTriangle, XCircle, Table2, Download, Filter, History, Sparkles, Trash2, Repeat2, Wand2, ShieldCheck, ArrowLeft, Upload } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function DataPreviewPage({ fileMeta, onBack }) {
   const [previewRows] = useState(200);
@@ -46,6 +48,66 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
   const [modal, setModal] = useState(null); // {type, payload}
+
+  function escapeCsvCell(s, delimiter) {
+    const needsQuote = s.includes('"') || s.includes('\n') || s.includes('\r') || s.includes(delimiter);
+    let out = s.replace(/"/g, '""');
+    return needsQuote ? `"${out}"` : out;
+  }
+  function downloadCSV(headerCols, rows, opts) {
+    const d = opts?.delimiter || ',';
+    const inc = opts?.includeHeader !== false;
+    const header = inc ? headerCols.join(d) + '\n' : '';
+    const body = rows.map(r => headerCols.map(h => escapeCsvCell(String(r[h] ?? ''), d)).join(d)).join('\n');
+    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lynq_export.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function buildHtmlTable(headerCols, rows) {
+    const head = headerCols.map(h => `<th style=\"text-align:left;padding:6px;border:1px solid #ddd;background:#f6f6f6;color:#555\">${String(h)}</th>`).join('');
+    const body = rows.map(r => `<tr>${headerCols.map(h => `<td style=\"padding:6px;border:1px solid #eee\">${String(r[h] ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`).join('')}</tr>`).join('');
+    const html = `<!doctype html><html><head><meta charset=\"utf-8\"><title>Lynq Export</title></head><body style=\"font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:16px\"><h2 style=\"margin:0 0 12px\">Lynq Export</h2><table style=\"border-collapse:collapse;width:100%;font-size:12px\">${`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`}</table></body></html>`;
+    return html;
+  }
+  function downloadDoc(headerCols, rows) {
+    const html = buildHtmlTable(headerCols, rows);
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lynq_export.doc';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function downloadPDF(headerCols, rows) {
+    const doc = new jsPDF();
+    doc.autoTable({
+      head: [headerCols],
+      body: rows.map(r => headerCols.map(h => String(r[h] ?? ''))),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [22, 163, 74] },
+    });
+    doc.save('lynq_export.pdf');
+  }
+  function openPrintPreview(headerCols, rows) {
+    const html = buildHtmlTable(headerCols, rows);
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { try { w.print(); } catch {} }, 300);
+  }
+
   const fileInputRef = useRef(null);
   const [pendingUpload, setPendingUpload] = useState(null); // { headers, rows, meta }
   const [dragActive, setDragActive] = useState(false);
@@ -630,37 +692,39 @@ function trimWhitespaceRow(row) {
   }
 
   function ExportDownloadModal({ title, rows, headerCols, onCancel, onConfirm }) {
+    const [format, setFormat] = useState('csv');
+    const [delimiter, setDelimiter] = useState(',');
+    const [includeHeader, setIncludeHeader] = useState(true);
     return (
       <div>
         <div className="px-5 py-4 border-b bg-gray-50 font-semibold">{title}</div>
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Delimiter</label>
-              <select className="w-full border rounded-lg px-3 py-2">
-                <option value=",">Comma (,)</option>
-                <option value=";">Semicolon (;)</option>
-                <option value="\t">Tab</option>
+              <label className="block text-xs text-gray-500 mb-1">Format</label>
+              <select className="w-full border rounded-lg px-3 py-2" value={format} onChange={(e)=>setFormat(e.target.value)}>
+                <option value="csv">CSV (.csv)</option>
+                <option value="doc">Word (.doc)</option>
+                <option value="pdf">PDF (.pdf)</option>
+                <option value="print">Print / PDF</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Encoding</label>
-              <select className="w-full border rounded-lg px-3 py-2">
-                <option>UTF-8</option>
-                <option>ISO-8859-1</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Include header</label>
-              <input type="checkbox" defaultChecked className="align-middle" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Print layout</label>
-              <select className="w-full border rounded-lg px-3 py-2">
-                <option>Compact</option>
-                <option>Full width</option>
-              </select>
-            </div>
+            {format === 'csv' && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Delimiter</label>
+                  <select className="w-full border rounded-lg px-3 py-2" value={delimiter} onChange={(e)=>setDelimiter(e.target.value)}>
+                    <option value=",">Comma (,)</option>
+                    <option value=";">Semicolon (;)</option>
+                    <option value="\t">Tab</option>
+                  </select>
+                </div>
+                <div className="flex items-end gap-2">
+                  <label className="text-xs text-gray-500 mb-1 block">Include header</label>
+                  <input type="checkbox" className="h-4 w-4" checked={includeHeader} onChange={(e)=>setIncludeHeader(e.target.checked)} />
+                </div>
+              </>
+            )}
           </div>
           <div className="text-xs text-gray-500">Preview (first 5 rows)</div>
           <div className="overflow-auto border rounded-lg">
@@ -680,9 +744,31 @@ function trimWhitespaceRow(row) {
             </table>
           </div>
         </div>
-        <div className="px-5 py-3 border-t flex justify-end gap-2">
+        <div className="px-5 py-3 border-t flex flex-wrap justify-between gap-2">
           <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { onConfirm(); }} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Proceed</button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openPrintPreview(headerCols, rows)}
+              className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+            >
+              Print
+            </button>
+            <button
+              onClick={() => {
+                if (format === 'csv') {
+                  downloadCSV(headerCols, rows, { delimiter, includeHeader });
+                } else if (format === 'doc') {
+                  downloadDoc(headerCols, rows);
+                } else if (format === 'pdf') {
+                  downloadPDF(headerCols, rows);
+                }
+                onConfirm && onConfirm();
+              }}
+              className="px-3 py-2 rounded-lg bg-blue-600 text-white"
+            >
+              Download
+            </button>
+          </div>
         </div>
       </div>
     );
