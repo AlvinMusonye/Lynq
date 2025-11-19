@@ -7,7 +7,7 @@ export default function LynqLanding({ onStart }) {
       {/* Navigation */}
       <nav className="container mx-auto px-6 py-6 flex justify-between items-center rounded-2xl bg-white/50 backdrop-blur-md border border-white/20">
         <div className="flex items-center gap-2">
-          <img src="logo.png" alt="Lynq Logo" className="h-8 w-auto" />
+          <img src="logo.png" alt="Lynq Logo" className="h-12 w-auto" />
         </div>
         <div className="flex gap-4 sm:gap-8 items-center text-sm">
           <a href="#features" className="hidden sm:inline-block text-gray-700 hover:text-orange-600 transition-colors">Features</a>
@@ -23,7 +23,7 @@ export default function LynqLanding({ onStart }) {
         <div className="grid lg:grid-cols-2 gap-10 md:gap-16 items-center">
           {/* Left Content */}
           <div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-5xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-tight">
               Clean Your CSVs<br />
               <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
                 in Seconds
@@ -160,13 +160,13 @@ export default function LynqLanding({ onStart }) {
             {/* Floating Cards Around iPhone */}
 
 
-            <div className="hidden md:block absolute bottom-32 -left-12 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
+            {/* <div className="hidden md:block absolute bottom-32 -left-12 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
               <div className="text-2xl font-bold text-orange-600 mb-1">100%</div>
               <div className="text-xs text-gray-600 mb-2">Browser-based</div>
               <div className="text-xs text-gray-500">No install needed</div>
-            </div>
+            </div> */}
 
-            <div className="hidden md:block absolute top-1/2 -right-20 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
+            {/* <div className="hidden md:block absolute top-1/2 -right-20 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20" style={{ width: '160px' }}>
               <div className="font-semibold text-sm mb-2">Live Preview</div>
               <div className="text-xs text-gray-500 mb-3">See changes before exporting</div>
               <div className="flex gap-1">
@@ -174,7 +174,7 @@ export default function LynqLanding({ onStart }) {
                 <div className="flex-1 h-2 bg-orange-400 rounded-full"></div>
                 <div className="flex-1 h-2 bg-orange-600 rounded-full"></div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -413,7 +413,7 @@ export default function LynqLanding({ onStart }) {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
-                <img src="/logo.png" alt="" srcset=""  width={100} height={100}/>
+                <img src="/logo.png" alt="" srcset="" width={100} height={100} />
               </div>
               <p className="text-gray-700 text-sm">Clean CSVs in seconds</p>
             </div>
