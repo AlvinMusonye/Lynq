@@ -93,7 +93,7 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
       head: [headerCols],
       body: rows.map(r => headerCols.map(h => String(r[h] ?? ''))),
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [22, 163, 74] },
+      headStyles: { fillColor: [234, 88, 12] },
     });
     doc.save('lynq_export.pdf');
   }
@@ -161,7 +161,7 @@ function trimWhitespaceRow(row) {
 }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white text-gray-900">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -169,7 +169,7 @@ function trimWhitespaceRow(row) {
             <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">Lynq</div>
+            <img src="logo.png" alt="Lynq Logo" className="h-8 w-auto" />
             <div className="h-6 w-px bg-gray-200" />
             <div>
               <div className="text-sm font-semibold">{fileMeta?.name ?? 'customers.csv'}</div>
@@ -177,23 +177,23 @@ function trimWhitespaceRow(row) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => fileInputRef.current?.click()} className="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+            <button onClick={() => fileInputRef.current?.click()} className="px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-700 hover:to-orange-600 flex items-center gap-2 transition-all">
               <Upload className="w-4 h-4" /> Upload CSV
             </button>
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onFilePick} />
-            <button onClick={() => setModal({ type: 'download' })} className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2">
+            <button onClick={() => setModal({ type: 'download' })} className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2 transition-colors">
               <FileDown className="w-4 h-4" /> Download raw
             </button>
-            <button onClick={() => setModal({ type: 'export' })} className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2">
+            <button onClick={() => setModal({ type: 'export' })} className="px-3 py-2 text-sm rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-700 flex items-center gap-2 transition-colors">
               <Table2 className="w-4 h-4" /> Export cleaned
             </button>
-            <button onClick={() => setModal({ type: 'sendApi' })} className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2">
+            <button onClick={() => setModal({ type: 'sendApi' })} className="px-3 py-2 text-sm rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-700 flex items-center gap-2 transition-colors">
               <Send className="w-4 h-4" /> Send to API
             </button>
             <button onClick={() => notify('Open Help/Docs (placeholder)')} className="p-2 rounded-lg hover:bg-gray-50" aria-label="Help">
               <HelpCircle className="w-5 h-5 text-gray-500" />
             </button>
-            <div className="ml-2 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">Parsing OK</div>
+            <div className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">Parsing OK</div>
           </div>
         </div>
       </header>
@@ -207,7 +207,7 @@ function trimWhitespaceRow(row) {
           className={`rounded-2xl border-2 ${dragActive ? 'border-blue-400 bg-blue-50/60' : 'border-dashed border-gray-300 bg-white'} p-6 flex items-center justify-between`}
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
               <Upload className="w-6 h-6" />
             </div>
             <div>
@@ -216,7 +216,7 @@ function trimWhitespaceRow(row) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={()=>fileInputRef.current?.click()} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Choose File</button>
+            <button onClick={()=>fileInputRef.current?.click()} className="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700">Choose File</button>
             <div className="text-xs text-gray-500">Supported: .csv</div>
           </div>
         </div>
@@ -226,7 +226,7 @@ function trimWhitespaceRow(row) {
       <section className="container mx-auto px-6 pt-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard label="Total rows" value={stats.total} color="text-gray-900" onClick={()=>notify('Filter: All rows (placeholder)')} />
-          <StatCard label={`Preview rows`} value={`${pageRows.length} / ${stats.total}`} color="text-blue-700" onClick={()=>notify('Show more rows (placeholder)')} />
+          <StatCard label={`Preview rows`} value={`${pageRows.length} / ${stats.total}`} color="text-orange-700" onClick={()=>notify('Show more rows (placeholder)')} />
           <StatCard label="Valid" value={stats.valid} color="text-green-700" onClick={()=>notify('Filter: Valid rows (placeholder)')} icon={<CheckCircle2 className="w-4 h-4"/>} />
           <StatCard label="Invalid" value={stats.invalid} color="text-red-700" onClick={()=>notify('Filter: Invalid rows (placeholder)')} icon={<XCircle className="w-4 h-4"/>} />
           <StatCard label="Duplicates" value={stats.duplicates} color="text-yellow-700" onClick={()=>notify('Filter: Duplicates (placeholder)')} icon={<AlertTriangle className="w-4 h-4"/>} />
@@ -290,7 +290,7 @@ function trimWhitespaceRow(row) {
                 </thead>
                 <tbody>
                   {pageRows.map((row, idx) => (
-                    <tr key={row.id} className="border-t hover:bg-blue-50/40">
+                    <tr key={row.id} className="border-t hover:bg-orange-50/40">
                       <td className="px-3 py-2"><input type="checkbox" /></td>
                       <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{pageStart + idx + 1}</td>
                       {headerCols.map(col => (
@@ -370,13 +370,13 @@ function trimWhitespaceRow(row) {
       {/* Bottom Action Bar */}
       <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white/80 backdrop-blur">
         <div className="container mx-auto px-6 py-3 flex flex-wrap gap-2 items-center">
-          <button onClick={()=>setModal({ type: 'autoCleanSettings' })} className="px-3 py-2 rounded-lg bg-blue-600 text-white flex items-center gap-2"><Sparkles className="w-4 h-4"/> Auto-Clean</button>
+          <button onClick={()=>setModal({ type: 'autoCleanSettings' })} className="px-3 py-2 rounded-lg bg-orange-600 text-white flex items-center gap-2"><Sparkles className="w-4 h-4"/> Auto-Clean</button>
           <button onClick={()=>openRemoveDuplicates()} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Trash2 className="w-4 h-4"/> Remove Duplicates</button>
           <button onClick={()=>notify('Apply Rules (placeholder)')} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Wand2 className="w-4 h-4"/> Apply Rules</button>
           <button onClick={()=>notify('Revalidate (placeholder)')} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Repeat2 className="w-4 h-4"/> Revalidate</button>
           <div className="flex-1" />
-          <button onClick={()=>setModal({ type: 'export' })} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><Download className="w-4 h-4"/> Export CSV</button>
-          <button onClick={()=>setModal({ type: 'sendApi' })} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2"><ShieldCheck className="w-4 h-4"/> Send to API</button>
+          <button onClick={()=>setModal({ type: 'export' })} className="px-3 py-2 rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-700 flex items-center gap-2"><Download className="w-4 h-4"/> Export CSV</button>
+          <button onClick={()=>setModal({ type: 'sendApi' })} className="px-3 py-2 rounded-lg border border-orange-200 hover:bg-orange-50 text-orange-700 flex items-center gap-2"><ShieldCheck className="w-4 h-4"/> Send to API</button>
         </div>
       </div>
 
@@ -629,7 +629,7 @@ function trimWhitespaceRow(row) {
       <button onClick={onClick} className="text-left group bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
         <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">{icon}{label}</div>
         <div className={`text-xl font-bold ${color}`}>{value}</div>
-        <div className="mt-2 h-1.5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full group-hover:from-blue-100 group-hover:to-blue-200" />
+        <div className="mt-2 h-1.5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full group-hover:from-orange-100 group-hover:to-orange-200" />
       </button>
     );
   }
@@ -657,9 +657,9 @@ function trimWhitespaceRow(row) {
       <div className="flex items-center justify-between text-sm">
         <div className="text-gray-700">{label}</div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{confidence}</span>
-          <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">Preview</button>
-          <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-blue-600 text-white">Apply</button>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">{confidence}</span>
+          <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-orange-200 hover:bg-orange-50">Preview</button>
+          <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-orange-600 text-white hover:bg-orange-700">Apply</button>
         </div>
       </div>
     );
@@ -669,12 +669,12 @@ function trimWhitespaceRow(row) {
     const [on, setOn] = useState(true);
     return (
       <div className="p-2 border border-gray-200 rounded-xl flex items-center justify-between gap-2">
-        <button onClick={() => { const next = !on; setOn(next); onToggle && onToggle(next); }} className={`flex-1 text-left text-sm px-3 py-2 rounded-lg border ${on ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}`}>
+        <button onClick={() => { const next = !on; setOn(next); onToggle && onToggle(next); }} className={`flex-1 text-left text-sm px-3 py-2 rounded-lg border ${on ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-gray-200 hover:bg-gray-50'}`}>
           {label}
         </button>
         <div className="flex items-center gap-2">
-          <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">Preview</button>
-          <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-blue-600 text-white">Apply</button>
+          <button onClick={onPreview} className="text-xs px-2 py-1 rounded border border-orange-200 hover:bg-orange-50">Preview</button>
+          <button onClick={onApply} className="text-xs px-2 py-1 rounded bg-orange-600 text-white hover:bg-orange-700">Apply</button>
         </div>
       </div>
     );
@@ -764,7 +764,7 @@ function trimWhitespaceRow(row) {
                 }
                 onConfirm && onConfirm();
               }}
-              className="px-3 py-2 rounded-lg bg-blue-600 text-white"
+              className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
             >
               Download
             </button>
@@ -781,7 +781,7 @@ function trimWhitespaceRow(row) {
         <div className="p-5 text-sm text-gray-700">{description}</div>
         <div className="px-5 py-3 border-t flex justify-end gap-2">
           <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
-          <button onClick={onConfirm} className={`px-3 py-2 rounded-lg ${tone === 'danger' ? 'bg-red-600' : tone === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'} text-white`}>{confirmLabel}</button>
+          <button onClick={onConfirm} className={`px-3 py-2 rounded-lg ${tone === 'danger' ? 'bg-red-600' : tone === 'warning' ? 'bg-yellow-600' : 'bg-orange-600'} text-white`}>{confirmLabel}</button>
         </div>
       </div>
     );
@@ -835,7 +835,7 @@ function trimWhitespaceRow(row) {
         </div>
         <div className="px-5 py-3 border-t flex justify-end gap-2">
           <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
-          <button onClick={onApply} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Apply</button>
+          <button onClick={onApply} className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700">Apply</button>
         </div>
       </div>
     );
