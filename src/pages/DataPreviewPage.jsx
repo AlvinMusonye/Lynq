@@ -12,8 +12,12 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
     window.__lynq_toast_timer = window.setTimeout(() => setToast(null), 2000);
   };
 
+  // stats are computed from current rows below via useMemo
+
   const initialHeaders = useMemo(() => ['firstName', 'lastName', 'mobile', 'email', 'package', 'date'], []);
   const [headerCols, setHeaderCols] = useState(initialHeaders);
+  const [fileName, setFileName] = useState(() => fileMeta?.name ?? 'customers.csv');
+  const [editingName, setEditingName] = useState(false);
   const sampleRows = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
     id: `row-${i+1}`,
     firstName: `John ${i+1}`,
@@ -108,6 +112,36 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
     setTimeout(() => { try { w.print(); } catch {} }, 300);
   }
 
+  function EditRowModal({ headerCols, row, onCancel, onSave }) {
+    const [form, setForm] = useState(() => {
+      const base = {};
+      headerCols.forEach(h => { base[h] = row?.[h] ?? ''; });
+      return base;
+    });
+    const update = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+    return (
+      <div>
+        <div className="px-5 py-4 border-b bg-gray-50 font-semibold">Edit Row</div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          {headerCols.map((h) => (
+            <div key={h}>
+              <label className="block text-xs text-gray-500 mb-1">{h}</label>
+              <input
+                className="w-full border rounded-lg px-3 py-2"
+                value={form[h]}
+                onChange={(e)=>update(h, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="px-5 py-3 border-t flex justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+          <button onClick={()=>onSave(form)} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Save</button>
+        </div>
+      </div>
+    );
+  }
+
   const fileInputRef = useRef(null);
   const [pendingUpload, setPendingUpload] = useState(null); // { headers, rows, meta }
   const [dragActive, setDragActive] = useState(false);
@@ -146,8 +180,11 @@ export default function DataPreviewPage({ fileMeta, onBack }) {
       const parsed = parseCsvBasic(text);
       if (!parsed || !parsed.headers.length) { notify('Could not parse CSV'); return; }
       const newRows = parsed.rows.map((r, i) => ({ id: `row-${i+1}`, ...r, status: 'valid' }));
-      setPendingUpload({ headers: parsed.headers, rows: newRows, meta: { name: file.name, size: `${Math.round(file.size/1024)}KB`, uploadedAt: 'just now' } });
-      setModal({ type: 'uploadPreview' });
+      setHeaderCols(parsed.headers);
+      setRows(newRows);
+      setPendingUpload(null);
+      setFileName(file.name || 'customers.csv');
+      notify('CSV uploaded (displayed)');
     };
     reader.readAsText(file);
   }, [notify]);
@@ -172,8 +209,21 @@ function trimWhitespaceRow(row) {
             <img src="logo.png" alt="Lynq Logo" className="h-8 w-auto" />
             <div className="h-6 w-px bg-gray-200" />
             <div>
-              <div className="text-sm font-semibold">{fileMeta?.name ?? 'customers.csv'}</div>
-              <div className="text-xs text-gray-500">{fileMeta?.size ?? '1.2MB'} • {fileMeta?.uploadedAt ?? 'just now'} • {headerCols.length} columns</div>
+              <div className="text-sm font-semibold flex items-center gap-2">
+                {!editingName ? (
+                  <button className="text-left hover:underline" onClick={()=>setEditingName(true)}>{fileName}</button>
+                ) : (
+                  <input
+                    className="px-2 py-1 border rounded"
+                    autoFocus
+                    value={fileName}
+                    onChange={(e)=>setFileName(e.target.value)}
+                    onBlur={()=>setEditingName(false)}
+                    onKeyDown={(e)=>{ if (e.key==='Enter') e.currentTarget.blur(); if (e.key==='Escape'){ setEditingName(false);} }}
+                  />
+                )}
+              </div>
+              <div className="text-xs text-gray-500">{headerCols.length} columns</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -462,16 +512,23 @@ function trimWhitespaceRow(row) {
               confirmLabel="Delete"
               tone="danger"
               onCancel={()=>setModal(null)}
-              onConfirm={()=>{ setRemovedIds(new Set([...removedIds, modal.payload.row.id])); setModal(null); notify('Row deleted (simulated)'); }}
+              onConfirm={()=>{
+                setRows(rows.filter(r => r.id !== modal.payload.row.id));
+                setModal(null);
+                notify('Row deleted');
+              }}
             />
           )}
           {modal.type === 'editRow' && (
-            <ConfirmModal
-              title="Edit Row"
-              description={`Inline editing will be available. For now, this is a visual placeholder for editing ${modal.payload.row.firstName}.`}
-              confirmLabel="Close"
+            <EditRowModal
+              headerCols={headerCols}
+              row={modal.payload.row}
               onCancel={()=>setModal(null)}
-              onConfirm={()=>setModal(null)}
+              onSave={(updated)=>{
+                setRows(rows.map(r => r.id === modal.payload.row.id ? { ...r, ...updated } : r));
+                setModal(null);
+                notify('Row updated');
+              }}
             />
           )}
           {modal.type === 'removeDuplicates' && (
@@ -585,8 +642,11 @@ function trimWhitespaceRow(row) {
       return;
     }
     const newRows = parsed.rows.map((r, i) => ({ id: `row-${i+1}`, ...r, status: 'valid' }));
-    setPendingUpload({ headers: parsed.headers, rows: newRows, meta: { name: file.name, size: `${Math.round(file.size/1024)}KB`, uploadedAt: 'just now' } });
-    setModal({ type: 'uploadPreview' });
+    setHeaderCols(parsed.headers);
+    setRows(newRows);
+    setPendingUpload(null);
+    setFileName(file.name || 'customers.csv');
+    notify('CSV uploaded (displayed)');
     // reset input so same file can be reselected
     e.target.value = '';
   }
@@ -836,6 +896,113 @@ function trimWhitespaceRow(row) {
         <div className="px-5 py-3 border-t flex justify-end gap-2">
           <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
           <button onClick={onApply} className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700">Apply</button>
+        </div>
+      </div>
+    );
+  }
+
+  function AutoCleanSettingsModal({ onCancel, onPreview, onApply }) {
+    const [settings, setSettings] = useState({
+      // Text
+      trimWhitespace: true,
+      collapseInternalWhitespace: true,
+      removeSpecialChars: false,
+      caseTransform: 'none', // none | lower | upper | title
+      // Phone
+      normalizePhone: true,
+      stripNonNumericPhone: true,
+      enforceKenyaPrefix: true,
+      // Email
+      lowercaseEmails: true,
+      validateEmail: true,
+      // Dates
+      standardizeDate: true,
+      // Numeric
+      sanitizeNumeric: true,
+      convertScientific: true,
+      // Rows
+      removeEmptyRows: true,
+      requiredColumns: 'mobile,email',
+      // Dedupe
+      dedupe: 'normalized', // none | exact | normalized
+      dedupeKeep: 'first', // first | last | highestPackage
+    });
+
+    const set = (k, v) => setSettings(prev => ({ ...prev, [k]: v }));
+
+    return (
+      <div>
+        <div className="px-5 py-4 border-b bg-gray-50 font-semibold">Auto-Clean Settings</div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="space-y-3">
+            <div className="font-semibold text-gray-700">Text</div>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.trimWhitespace} onChange={e=>set('trimWhitespace', e.target.checked)} /> Trim whitespace</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.collapseInternalWhitespace} onChange={e=>set('collapseInternalWhitespace', e.target.checked)} /> Collapse spaces</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.removeSpecialChars} onChange={e=>set('removeSpecialChars', e.target.checked)} /> Remove special chars</label>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Case</div>
+              <select className="w-full border rounded-lg px-3 py-2" value={settings.caseTransform} onChange={e=>set('caseTransform', e.target.value)}>
+                <option value="none">None</option>
+                <option value="lower">lowercase</option>
+                <option value="upper">UPPERCASE</option>
+                <option value="title">Title Case</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-semibold text-gray-700">Phone</div>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.stripNonNumericPhone} onChange={e=>set('stripNonNumericPhone', e.target.checked)} /> Strip non-numeric</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.normalizePhone} onChange={e=>set('normalizePhone', e.target.checked)} /> Normalize to +2547XXXXXXXX</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.enforceKenyaPrefix} onChange={e=>set('enforceKenyaPrefix', e.target.checked)} /> Enforce +254 prefix</label>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-semibold text-gray-700">Email</div>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.lowercaseEmails} onChange={e=>set('lowercaseEmails', e.target.checked)} /> Lowercase emails</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.validateEmail} onChange={e=>set('validateEmail', e.target.checked)} /> Validate email format</label>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-semibold text-gray-700">Dates & Numeric</div>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.standardizeDate} onChange={e=>set('standardizeDate', e.target.checked)} /> Standardize dates (YYYY-MM-DD)</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.sanitizeNumeric} onChange={e=>set('sanitizeNumeric', e.target.checked)} /> Sanitize numbers</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.convertScientific} onChange={e=>set('convertScientific', e.target.checked)} /> Convert scientific notation</label>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-semibold text-gray-700">Rows</div>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={settings.removeEmptyRows} onChange={e=>set('removeEmptyRows', e.target.checked)} /> Remove empty rows</label>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Required columns (comma-separated)</div>
+              <input className="w-full border rounded-lg px-3 py-2" value={settings.requiredColumns} onChange={e=>set('requiredColumns', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-semibold text-gray-700">Deduplication</div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Strategy</div>
+              <select className="w-full border rounded-lg px-3 py-2" value={settings.dedupe} onChange={e=>set('dedupe', e.target.value)}>
+                <option value="none">None</option>
+                <option value="exact">Exact rows</option>
+                <option value="normalized">Normalized phone</option>
+              </select>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Keep</div>
+              <select className="w-full border rounded-lg px-3 py-2" value={settings.dedupeKeep} onChange={e=>set('dedupeKeep', e.target.value)}>
+                <option value="first">First</option>
+                <option value="last">Last</option>
+                <option value="highestPackage">Highest package</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="px-5 py-3 border-t flex justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+          <button onClick={() => onPreview(settings)} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Preview</button>
+          <button onClick={() => onApply(settings)} className="px-3 py-2 rounded-lg bg-blue-600 text-white">Apply</button>
         </div>
       </div>
     );
